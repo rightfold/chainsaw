@@ -25,3 +25,32 @@ pub fn open_for_append<Clock>(clock: Clock, store: &Path, log: &str) -> io::Resu
     try!(file.write_all(&FILE_HEADER));
     Ok(Appender(file))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::env::temp_dir;
+    use std::fs::{metadata, remove_dir_all};
+    use std::path::PathBuf;
+    use super::*;
+
+    fn test_store() -> PathBuf {
+        temp_dir()
+    }
+
+    fn test_log() -> &'static str {
+        "chainsaw_test"
+    }
+
+    fn test_log_dir() -> PathBuf {
+        test_store().join(test_log())
+    }
+
+    #[test]
+    fn test_create() {
+        remove_dir_all(&test_log_dir()).unwrap();
+        assert!(create(&test_store(), test_log()).is_ok());
+        assert!(metadata(&test_log_dir())
+                .map(|m| m.file_type().is_dir())
+                .unwrap_or(false));
+    }
+}
