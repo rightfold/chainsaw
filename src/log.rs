@@ -72,7 +72,7 @@ mod tests {
     use std::env::temp_dir;
     use std::fs::{metadata, remove_dir_all};
     use std::path::PathBuf;
-    use std::time::SystemTime;
+    use std::time::UNIX_EPOCH;
     use super::*;
 
     fn test_store() -> PathBuf {
@@ -98,6 +98,7 @@ mod tests {
         let log = "chainsaw_test_open_for_append";
         remove_dir_all(&test_log_dir(log)).unwrap_or(());
         create(&test_store(), log).unwrap();
-        open_for_append(|| SystemTime::now(), &test_store(), log).unwrap();
+        assert!(open_for_append(|| UNIX_EPOCH, &test_store(), log).is_ok());
+        assert!(test_log_dir(log).join("0").is_file());
     }
 }
