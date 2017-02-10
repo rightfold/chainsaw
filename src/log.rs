@@ -46,12 +46,15 @@ impl<'s, 'l, C> Appender<'s, 'l, C> where C: Fn() -> SystemTime {
         try!(self.file.write_all(record));
         try!(self.file.write_all(&binary::encode_u32(0)));
 
+        self.rotate_if_necessary()
+    }
+
+    fn rotate_if_necessary(&mut self) -> io::Result<()> {
         self.record_count += 1;
         if self.record_count > RECORD_COUNT_LIMIT {
             self.file = try!(Self::open(&self.clock, self.store, self.log));
             self.record_count = 0;
         }
-
         Ok(())
     }
 }
