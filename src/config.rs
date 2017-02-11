@@ -45,9 +45,9 @@ impl Config {
                 "" => {},
                 line if line.starts_with("#") => {},
                 line if line.starts_with("LOG ") =>
-                    { logs.insert(line[4..].to_string()); },
+                    { logs.insert(line[4..].trim_left().to_string()); },
                 line if line.starts_with("STORE ") =>
-                    store = Some(PathBuf::from(&line[6..])),
+                    store = Some(PathBuf::from(&line[6..].trim_left())),
                 _ => return Err(Error::ParseError),
             }
         }
