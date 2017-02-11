@@ -79,7 +79,7 @@ fn run_logger(zmq: &zmq::Context, log: &str) -> io::Result<()> {
     loop {
         try!(sub.receive(&mut log_message));
         if !log_message.more() {
-            continue
+            continue;
         }
 
         try!(sub.receive(&mut record_message));
