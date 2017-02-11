@@ -2,13 +2,14 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /*----------------------------------------------------------------------------*/
 
 #[derive(Debug)]
 pub enum Error {
     ParseError,
+    MissingStore,
     IOError(io::Error),
 }
 
@@ -22,6 +23,7 @@ impl From<io::Error> for Error {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Config {
+    pub store: PathBuf,
     pub logs: HashSet<String>,
 }
 
@@ -34,6 +36,7 @@ impl Config {
 
     pub fn new_from_buf_read<B>(buf_read: &mut B) -> Result<Self, Error>
         where B: BufRead {
+        let mut store = None;
         let mut logs = HashSet::new();
 
         for line_result in buf_read.lines() {
@@ -43,11 +46,13 @@ impl Config {
                 line if line.starts_with("#") => {},
                 line if line.starts_with("LOG ") =>
                     { logs.insert(line[4..].to_string()); },
+                line if line.starts_with("STORE ") =>
+                    store = Some(PathBuf::from(&line[6..])),
                 _ => return Err(Error::ParseError),
             }
         }
 
-        Ok(Config{logs: logs})
+        Ok(Config{store: try!(store.ok_or(Error::MissingStore)), logs: logs})
     }
 }
 
