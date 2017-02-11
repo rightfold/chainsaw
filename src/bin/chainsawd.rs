@@ -6,7 +6,7 @@ use chainsaw::log;
 use chainsaw::zmq;
 use std::env;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread::{JoinHandle, spawn};
 use std::time::SystemTime;
@@ -38,6 +38,13 @@ impl From<io::Error> for Error {
 
 /*----------------------------------------------------------------------------*/
 
+struct Global {
+    zmq: zmq::Context,
+    store: PathBuf,
+}
+
+/*----------------------------------------------------------------------------*/
+
 fn main() {
     safe_main().unwrap();
 }
@@ -46,12 +53,14 @@ fn safe_main() -> Result<(), Error> {
     let config_path = try!(env::args().nth(1).ok_or(Error::MissingConfigPath));
     let config = try!(Config::new_from_file(config_path));
 
-    let store = Arc::new(config.store);
+    let global = Arc::new(Global{
+        zmq: try!(zmq::Context::new()),
+        store: config.store,
+    });
 
-    let zmq = Arc::new(try!(zmq::Context::new()));
-    let mut pub_ = try!(make_pub(&zmq));
+    let mut pub_ = try!(make_pub(&global.zmq));
 
-    for logger in start_loggers(&store, &zmq, config.logs.iter().cloned()) {
+    for logger in start_loggers(&global, config.logs.iter().cloned()) {
         logger.join().unwrap().unwrap();
     }
 
@@ -64,25 +73,24 @@ fn make_pub(zmq: &zmq::Context) -> io::Result<zmq::Socket> {
     Ok(pub_)
 }
 
-fn start_loggers<I>(store: &Arc<PathBuf>, zmq: &Arc<zmq::Context>, logs: I)
+fn start_loggers<I>(global: &Arc<Global>, logs: I)
     -> Vec<JoinHandle<io::Result<()>>>
     where I: Iterator<Item=String> {
     logs
     .map(|log| {
-        let store = store.clone();
-        let zmq = zmq.clone();
-        spawn(move || { run_logger(&store, &zmq, &log) })
+        let global = global.clone();
+        spawn(move || { run_logger(&global, &log) })
     })
     .collect()
 }
 
-fn run_logger(store: &Path, zmq: &zmq::Context, log: &str) -> io::Result<()> {
-    let mut sub = try!(zmq::Socket::new(zmq, zmq::SocketType::SUB));
+fn run_logger(global: &Global, log: &str) -> io::Result<()> {
+    let mut sub = try!(zmq::Socket::new(&global.zmq, zmq::SocketType::SUB));
     try!(sub.connect(&mut INPROC_ADDRESS.to_vec()));
     try!(sub.subscribe(log.as_bytes()));
 
     let clock = || SystemTime::now();
-    let mut appender = try!(log::open_for_append(clock, store, log));
+    let mut appender = try!(log::open_for_append(clock, &global.store, log));
 
     let mut message = zmq::Message::new();
     loop {
