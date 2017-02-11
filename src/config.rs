@@ -55,7 +55,6 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use std::io;
     use std::io::Cursor;
     use super::*;
 
