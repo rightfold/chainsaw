@@ -43,7 +43,7 @@ fn safe_main() -> Result<(), Error> {
     let config_path = try!(env::args().nth(1).ok_or(Error::MissingConfigPath));
     let config = try!(Config::new_from_file(config_path));
 
-    let mut zmq = Arc::new(try!(zmq::Context::new()));
+    let zmq = Arc::new(try!(zmq::Context::new()));
     let mut pub_ = try!(make_pub(&zmq));
 
     for logger in start_loggers(&zmq, config.logs.iter().cloned()) {
