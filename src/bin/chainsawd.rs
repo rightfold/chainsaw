@@ -73,15 +73,10 @@ fn start_loggers<I>(zmq: &Arc<zmq::Context>, logs: I)
 fn run_logger(zmq: &zmq::Context, log: &str) -> io::Result<()> {
     let mut sub = try!(zmq::Socket::new(zmq, zmq::SocketType::SUB));
     try!(sub.connect(&mut INPROC_ADDRESS.to_vec()));
+    try!(sub.subscribe(log.as_bytes()));
 
-    let mut log_message = zmq::Message::new();
-    let mut record_message = zmq::Message::new();
+    let mut message = zmq::Message::new();
     loop {
-        try!(sub.receive(&mut log_message));
-        if !log_message.more() {
-            continue;
-        }
-
-        try!(sub.receive(&mut record_message));
+        try!(sub.receive(&mut message));
     }
 }
