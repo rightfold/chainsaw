@@ -60,7 +60,7 @@ pub enum SocketType {
 }
 
 impl Socket {
-    pub fn new(context: &mut Context, type_: SocketType) -> io::Result<Self> {
+    pub fn new(context: &Context, type_: SocketType) -> io::Result<Self> {
         let handle = unsafe { zmq_socket(context.0, type_ as c_int) };
         if handle.is_null() {
             Err(io::Error::last_os_error())
@@ -172,12 +172,12 @@ mod tests {
 
     #[test]
     fn test_zmq() {
-        let mut context = Context::new().unwrap();
+        let context = Context::new().unwrap();
 
-        let mut client = Socket::new(&mut context, SocketType::PUSH).unwrap();
+        let mut client = Socket::new(&context, SocketType::PUSH).unwrap();
         client.connect(&mut b"inproc://foo".to_vec()).unwrap();
 
-        let mut server = Socket::new(&mut context, SocketType::PULL).unwrap();
+        let mut server = Socket::new(&context, SocketType::PULL).unwrap();
         server.bind(&mut b"inproc://foo".to_vec()).unwrap();
 
         spawn(move || {
