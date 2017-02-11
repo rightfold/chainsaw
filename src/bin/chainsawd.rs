@@ -47,7 +47,7 @@ fn safe_main() -> Result<(), Error> {
     let mut pub_ = try!(make_pub(&zmq));
 
     for logger in start_loggers(&zmq, config.logs.iter().cloned()) {
-        logger.join().unwrap();
+        logger.join().unwrap().unwrap();
     }
 
     Ok(())
